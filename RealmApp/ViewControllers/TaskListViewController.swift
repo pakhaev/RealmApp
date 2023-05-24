@@ -11,10 +11,12 @@ import RealmSwift
 
 final class TaskListViewController: UITableViewController {
 
+    // MARK: - Private properties
     private var taskLists: Results<TaskList>!
     private let storageManager = StorageManager.shared
     private let dataManager = DataManager.shared
     
+    // MARK: - Life cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         let addButton = UIBarButtonItem(
@@ -36,26 +38,45 @@ final class TaskListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    // MARK: - UITableViewDataSource
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        taskLists.count
-    }
+
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TaskListCell", for: indexPath)
-        var content = cell.defaultContentConfiguration()
+    // MARK: - Navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        guard let indexPath = tableView.indexPathForSelectedRow else { return }
+        guard let tasksVC = segue.destination as? TasksViewController else { return }
         let taskList = taskLists[indexPath.row]
-        let currentCount = taskList.tasks.filter("isComplete = false").count
-        let secondaryText = currentCount == 0 ? "🫡" : String(currentCount)
-        
-        content.text = taskList.title
-        content.secondaryText = secondaryText
-        
-        cell.contentConfiguration = content
-        return cell
+        tasksVC.taskList = taskList
+    }
+
+    // MARK: - @IBActions
+    @IBAction func sortingList(_ sender: UISegmentedControl) {
+        if sender.selectedSegmentIndex == 0 {
+            taskLists = taskLists.sorted(byKeyPath: "date", ascending: true)
+            
+        } else if sender.selectedSegmentIndex == 1 {
+            taskLists = taskLists.sorted(byKeyPath: "title", ascending: true)
+        }
+        tableView.reloadData()
     }
     
-    // MARK: - UITableViewDelegate
+    // MARK: - OBJC func
+    @objc private func addButtonPressed() {
+        showAlert()
+    }
+    
+    // MARK: - For temp data
+    private func createTempData() {
+        if !UserDefaults.standard.bool(forKey: "done") {
+            dataManager.createTempData { [unowned self] in
+                UserDefaults.standard.set(true, forKey: "done")
+                tableView.reloadData()
+            }
+        }
+    }
+}
+
+// MARK: - UITableViewDelegate
+extension TaskListViewController {
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let taskList = taskLists[indexPath.row]
         
@@ -82,36 +103,26 @@ final class TaskListViewController: UITableViewController {
         
         return UISwipeActionsConfiguration(actions: [doneAction, editAction, deleteAction])
     }
-    
-    // MARK: - Navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        guard let indexPath = tableView.indexPathForSelectedRow else { return }
-        guard let tasksVC = segue.destination as? TasksViewController else { return }
-        let taskList = taskLists[indexPath.row]
-        tasksVC.taskList = taskList
-    }
+}
 
-    @IBAction func sortingList(_ sender: UISegmentedControl) {
-        if sender.selectedSegmentIndex == 0 {
-            taskLists = taskLists.sorted(byKeyPath: "date", ascending: true)
-            
-        } else if sender.selectedSegmentIndex == 1 {
-            taskLists = taskLists.sorted(byKeyPath: "title", ascending: true)
-        }
-        tableView.reloadData()
+// MARK: - UITableViewDataSource
+extension TaskListViewController {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        taskLists.count
     }
     
-    @objc private func addButtonPressed() {
-        showAlert()
-    }
-    
-    private func createTempData() {
-        if !UserDefaults.standard.bool(forKey: "done") {
-            dataManager.createTempData { [unowned self] in
-                UserDefaults.standard.set(true, forKey: "done")
-                tableView.reloadData()
-            }
-        }
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TaskListCell", for: indexPath)
+        var content = cell.defaultContentConfiguration()
+        let taskList = taskLists[indexPath.row]
+        let currentCount = taskList.tasks.filter("isComplete = false").count
+        let secondaryText = currentCount == 0 ? "🫡" : String(currentCount)
+        
+        content.text = taskList.title
+        content.secondaryText = secondaryText
+        
+        cell.contentConfiguration = content
+        return cell
     }
 }
 
