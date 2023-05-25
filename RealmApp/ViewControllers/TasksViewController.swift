@@ -134,8 +134,14 @@ extension TasksViewController {
             } else {
                 storageManager.unDone(task)
             }
-            tableView.reloadData()
             
+            let section = !task.isComplete ? 0 : 1
+            let row = tableView.numberOfRows(inSection: section)
+            
+            let toIndexPath = IndexPath(row: row, section: section)
+            
+            tableView.moveRow(at: indexPath, to: toIndexPath)
+    
             isDone(true)
         }
         
