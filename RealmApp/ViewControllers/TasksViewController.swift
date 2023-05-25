@@ -129,16 +129,16 @@ extension TasksViewController {
         
         let doneAction = UIContextualAction(style: .normal, title: doneTitle) { [unowned self] _, _, isDone in
             
-            if !task.isComplete {
-                storageManager.done(task)
-            } else {
+            var section = 0
+            
+            if task.isComplete {
                 storageManager.unDone(task)
+            } else {
+                section = 1
+                storageManager.done(task)
             }
             
-            let section = !task.isComplete ? 0 : 1
-            let row = tableView.numberOfRows(inSection: section)
-            
-            let toIndexPath = IndexPath(row: row, section: section)
+            let toIndexPath = IndexPath(row: 0, section: section)
             
             tableView.moveRow(at: indexPath, to: toIndexPath)
     
